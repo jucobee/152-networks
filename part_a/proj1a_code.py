@@ -2,15 +2,16 @@
 import dpkt
 import sys
 import datetime
+import socket
 
-def parse_pcap(pcap_file):
+def part1a(pcap_file):
 
     # read the pcap file
     f = open(pcap_file, 'rb')
     pcap = dpkt.pcap.Reader(f)
 
     #variables for question 1 of part a
-    #numsecureshell = 0 ????
+    numssh = 0 
     numftp = 0
     numdns = 0
 
@@ -22,7 +23,7 @@ def parse_pcap(pcap_file):
     ipdest = []
 
     #q4
-    cantell
+    cantell = 'false'
 
     # iterate over packets
     for timestamp, data in pcap:
@@ -38,7 +39,7 @@ def parse_pcap(pcap_file):
         ip = eth.data
 
         # do not proceed if there is no transport layer data
-        if not isinstance(ip.data, dpkt.tcp.TCP):
+        if isinstance(ip.data, dpkt.arp.ARP) or isinstance(ip.data, dpkt.icmp.ICMP):
             continue
 
         # extract transport layer data
@@ -50,78 +51,74 @@ def parse_pcap(pcap_file):
             continue
 
         #1
-        if ip.dport == 21 or ip.sport == 21:
-            numftp += 1
-        if ip.dport == 53 or ip.sport == 53:
-            numdns += 1
+        if not isinstance(ip.data, dpkt.icmp.ICMP):
+            if tcp.dport == 22 or tcp.sport == 22:  
+                numssh += 1
+            if tcp.dport == 21 or tcp.sport == 21:
+                numftp += 1
+            if tcp.dport == 53 or tcp.sport == 53:
+                numdns += 1
         
         
         #2
-        if tcp.dport == 80 or tcp.sport == 80:
-            numhttp += 1
-        if tcp.dport == 443 or tcp.sport == 443:
-            numhttps += 1
+            if tcp.dport == 80 or tcp.sport == 80:
+                numhttp += 1
+            if tcp.dport == 443 or tcp.sport == 443:
+                numhttps += 1
 
 
         #3
-        ipdest.append((ip.dst, str(datetime.datetime.utcfromtimestamp(timestamp))))
+        ipdest.append((socket.inet_ntoa(ip.dst), str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC))))
 
         #4
 
         if tcp.dport == 80:
             try:
                 http = dpkt.http.Request(tcp.data)
-                #print(http.headers)
                 browser = http.headers["user-agent"]
                 cantell = 'true'
             except:
                 cantell = 'false'
-        
 
-        # extract application layer data
-        ## if destination port is 80, it is a http request
-#        if tcp.dport == 80:
-#            try:
-#                http = dpkt.http.Request(tcp.data)
-#                print(http.headers)
-#            except:
-#                print("Malformed HTTP Request packet")
-        ## if source port is 80, it is a http response
-#        elif tcp.sport == 80:
-#            try:
-#                http = dpkt.http.Response(tcp.data)
-#                print(http.headers)
-#            except:
-#                print("Malformed HTTP Response packet")
-    
+    print('\n')
 
     #Q1
+    print('Question 1:')
     print('Number of HTTP packets: ', numhttp)
-
-    if pcap_file == 'example.pcap' or pcap_file == 'httpforever.pcap':
-        print('Number of HTTPS packets: ', numhttps)    #Q2
-
     print('Number of FTP packets: ', numftp)
     print('Number of DNS packets: ', numdns)
+    print('Number of SSH packets: ', numssh)
+
+    print('\n')
+
+    #Q2
+    if pcap_file == 'example.pcap' or pcap_file == 'httpforever.pcap':
+        print('Question 2:')
+        print('Number of HTTP packets: ', numhttp)
+        print('Number of HTTPS packets: ', numhttps)    
+        print('\n')
 
     #Q3
+    print('Question 3:')
     for packet in ipdest:
-        print('IP: ', packet[0])
-        print('Timestamp: ', packet[1])
+        print('IP: ', packet[0], '  Timestamp: ', packet[1])
+        #print('Timestamp: ', packet[1])
 
+    print('\n')
 
     #Q4
+    
     if pcap_file == 'example.pcap' or pcap_file == 'httpforever.pcap':
+        print('Question 4:')
         if cantell == 'true':
             print('Browser: ', browser)
         else:
             print("Browser cannot be found")
-
-    
+        print('\n')
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("No pcap file specified!")
     else:
-        parse_pcap(sys.argv[1])
+        part1a(sys.argv[1])
