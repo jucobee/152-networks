@@ -38,8 +38,8 @@ def part1a(pcap_file):
         # extract network layer data
         ip = eth.data
 
-        # do not proceed if there is no transport layer data
-        if isinstance(ip.data, dpkt.arp.ARP) or isinstance(ip.data, dpkt.icmp.ICMP):
+        # remove unrelated ARP data
+        if isinstance(ip.data, dpkt.arp.ARP):
             continue
 
         # extract transport layer data
@@ -47,11 +47,11 @@ def part1a(pcap_file):
 
         # do not proceed if there is no application layer data
         # here we check length because we don't know protocol yet
-        if not len(tcp.data) > 0:
-            continue
+        #if not len(tcp.data) > 0:
+            #continue
 
         #1
-        if not isinstance(ip.data, dpkt.icmp.ICMP):
+        if not isinstance(ip.data, dpkt.icmp.ICMP) and not isinstance(ip.data, dpkt.igmp.IGMP) and not isinstance(ip.data, dpkt.icmp.ICMP) and len(tcp.data) > 0:
             if tcp.dport == 22 or tcp.sport == 22:  
                 numssh += 1
             if tcp.dport == 21 or tcp.sport == 21:
@@ -72,22 +72,30 @@ def part1a(pcap_file):
 
         #4
 
-        if tcp.dport == 80:
-            try:
+        if pcap_file == 'httpforever.pcap':
+            if tcp.dport == 80 and cantell=='false':
                 http = dpkt.http.Request(tcp.data)
                 browser = http.headers["user-agent"]
                 cantell = 'true'
-            except:
-                cantell = 'false'
+
+        #if pcap_file == 'example.pcap':
+             #if tcp.dport == 1900:
+                 #print(tcp.data)
+                 #no way to access ssdp headers
+
 
     print('\n')
 
     #Q1
     print('Question 1:')
-    print('Number of HTTP packets: ', numhttp)
-    print('Number of FTP packets: ', numftp)
-    print('Number of DNS packets: ', numdns)
-    print('Number of SSH packets: ', numssh)
+    if numhttp > 0:
+        print('Number of HTTP packets: ', numhttp)
+    if numftp > 0:
+        print('Number of FTP packets: ', numftp)
+    if numdns > 0:
+        print('Number of DNS packets: ', numdns)
+    if numssh > 0:
+        print('Number of SSH packets: ', numssh)
 
     print('\n')
 

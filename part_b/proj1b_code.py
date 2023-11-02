@@ -8,6 +8,7 @@ def part1b(pcap_file):
     f = open(pcap_file, 'rb')
     pcap = dpkt.pcap.Reader(f)
 
+    currentsecret = 1
     secret = []
 
     sourcearray = []
@@ -15,6 +16,7 @@ def part1b(pcap_file):
 
     packetinfo = []
     packetnum = 0
+
 
 
     # iterate over packets
@@ -48,21 +50,19 @@ def part1b(pcap_file):
 
         if pcap_file == 'ass1_1.pcap':  
             
-            if isinstance(tcp.data, dpkt.ssl.TLSHandshake):
-                print('yo')
-            #tls = dpkt.ssl.TLS(tcp.data)
+            if tcp.dport == 80 and len(tcp.data) > 0:
+                http = dpkt.http.Request(tcp.data)
 
-            #for record in tls.records:
-                #if record.type == 22:
-                    #handshake_protocol = dpkt.ssl.TLSHandshake(record.data)
-                    #if handshake_protocol.type == 22:
-                        #secret.append(record)
+                if currentsecret == 1:
+                    secret.append((http.method, http.uri, http.version))
 
-            ##if isinstance(tcp.data, dpkt.ssl.TLS):
-                ####tls = tcp.data
+                if currentsecret == 2:
+                    secret.append(http.headers)
 
-                ##if tls.type == 22 or tls.type == 20:      #check if type is TLS Handshake or Change Cipher Spec
+                if currentsecret == 3: 
+                    secret.append(http.body)
                     
+                currentsecret += 1
 
         packetnum += 1       
         if pcap_file == 'ass1_1.pcap':
@@ -88,8 +88,10 @@ def part1b(pcap_file):
     if pcap_file == 'ass1_1.pcap':  
     
         print('Secrets: ')
-        for numsecret in secret:
-            print(secret[numsecret]) 
+        print("Secret 1: ", secret[0]) 
+        print("Secret 2: ", secret[1]) 
+        print("Secret 3: ", secret[2]) 
+
         print('\n')
 
     #1. List the unique source and destination IP addresses do you see in each pcap file?
@@ -106,7 +108,7 @@ def part1b(pcap_file):
     print("Destination IPs: ")
     for ip in destarray:
         if pcap_file == 'ass1_1.pcap':
-            print(socket.inet_ntoa(socket.AF_INET6, ip))
+            print(socket.inet_ntop(socket.AF_INET6, ip))
         else:
             print(socket.inet_ntoa(ip))
 
