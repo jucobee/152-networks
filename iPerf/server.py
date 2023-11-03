@@ -28,7 +28,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server_socket:
             
             end_time = time.time()
 
-            # throughput = bytes / (RTT / 2)
+            # throughput = bytes / duration
             throughput = data_size / (end_time - start_time) / 1024 # [KB/sec]
             server_socket.sendto(str(throughput).encode(), addr)  
             print("Sent throughput to client")
